@@ -1,5 +1,6 @@
 package main
 
 func main() {
-	createDefaultConfig()
+	// todo: make this as a subcommand
+	_ = createDefaultConfig()
 }
