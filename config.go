@@ -43,9 +43,9 @@ commands:
   exec: /usr/bin/date # a full path to the command
   description: Returns a result of date command
   subcommands:
-    - name: unixtime
-      description: Returns a result of date command in Unixtime
-      exec: /usr/bin/date +%s # arguments are allowed and it is separated by the space.
+  - name: unixtime
+    description: Returns a result of date command in Unixtime
+    exec: /usr/bin/date +%s # arguments are allowed and it is separated by the space.
 - name: timeout
   exec: /usr/bin/sleep 10
   description: an example for execution time timeout
