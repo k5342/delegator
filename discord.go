@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"go.uber.org/zap"
 )
 
 type DiscordBot struct {
@@ -31,22 +32,30 @@ func (bot *DiscordBot) LaunchSession() error {
 		if commandName == bot.config.SlashCommandPrefix {
 			go (func() {
 				// todo: enqueue request here
-				_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Content: "please wait...",
 					},
 				})
+				if err != nil {
+					logger.Error("failed to send a deferred response", zap.Error(err), zap.Any("interaction", i))
+					return
+				}
 				// todo: dispatch command and execute here
 				// todo: wait for completion
+				logger.Debug("waiting for a completion...", zap.Any("interaction", i))
 				time.Sleep(time.Second * 10)
+				logger.Debug("completed", zap.Any("interaction", i))
 				// todo: update result placeholder
-				_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "completed!",
-					},
+				msg := "completed!"
+				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &msg,
 				})
+				if err != nil {
+					logger.Error("failed to send a result response", zap.Error(err), zap.Any("interaction", i))
+					return
+				}
 			})()
 		}
 	})
@@ -56,6 +65,21 @@ func (bot *DiscordBot) LaunchSession() error {
 	}
 	logger.Sugar().Info("bot launched")
 	bot.session = session
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        bot.config.SlashCommandPrefix,
+			Description: "run some specific commands",
+		},
+	}
+	for _, val := range commands {
+		logger.Sugar().Debug("creating a command", zap.String("command_name", val.Name))
+		_, err := bot.session.ApplicationCommandCreate(bot.session.State.User.ID, "", val)
+		if err == nil {
+			logger.Sugar().Info("created a command", zap.String("command_name", val.Name))
+		} else {
+			logger.Sugar().Error("cannot create command", zap.String("command_name", val.Name), zap.Error(err))
+		}
+	}
 	return nil
 }
 
