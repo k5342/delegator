@@ -32,7 +32,7 @@ type BaseCommand struct {
 func generateDefaultConfig() string {
 	return `
 # prefix is a root command name to call the bot
-prefix: delegator
+slash_command_prefix: delegator
 
 # issue your discord bot token from Discord Developer Portal
 discord_bot_token: FILL_IT_HERE
