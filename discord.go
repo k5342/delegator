@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,43 +22,67 @@ func NewDiscordBot(config *Config) *DiscordBot {
 	return &bot
 }
 
+func (bot *DiscordBot) getCommandExec(commandName string) (bool, string) {
+	for _, cmd := range bot.config.Commands {
+		if commandName == cmd.Name {
+			return true, cmd.Exec
+		}
+	}
+	return false, ""
+}
+
 func (bot *DiscordBot) LaunchSession() error {
 	session, err := discordgo.New("Bot " + bot.config.DiscordBotToken)
 	if err != nil {
 		return err
 	}
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// check whether the bot has a corresponding command handler of a requested command
 		commandName := i.ApplicationCommandData().Name
-		// todo: limit maximum executions in parallel
-		if commandName == bot.config.SlashCommandPrefix {
-			go (func() {
-				// todo: enqueue request here
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "please wait...",
-					},
-				})
-				if err != nil {
-					logger.Error("failed to send a deferred response", zap.Error(err), zap.Any("interaction", i))
-					return
-				}
-				// todo: dispatch command and execute here
-				// todo: wait for completion
-				logger.Debug("waiting for a completion...", zap.Any("interaction", i))
-				time.Sleep(time.Second * 10)
-				logger.Debug("completed", zap.Any("interaction", i))
-				// todo: update result placeholder
-				msg := "completed!"
-				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-					Content: &msg,
-				})
-				if err != nil {
-					logger.Error("failed to send a result response", zap.Error(err), zap.Any("interaction", i))
-					return
-				}
-			})()
+		logger.Debug("interaction created", zap.Any("interaction", i))
+		found, cmdExec := bot.getCommandExec(commandName)
+		logger.Debug("getCommandExec", zap.Bool("found", found), zap.String("cmdExec", cmdExec))
+		if !found {
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("hmm, command `/%s` is not found or outdated. please reload the bot or cleanup unnecessary slash commands.", cmdExec),
+				},
+			})
+			if err != nil {
+				logger.Error("failed to send an error response", zap.Error(err), zap.Any("interaction", i))
+				return
+			}
+			return
 		}
+		// todo: limit maximum executions in parallel
+		go (func() {
+			// todo: enqueue request here
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("Run: `%s`", cmdExec),
+				},
+			})
+			if err != nil {
+				logger.Error("failed to send a deferred response", zap.Error(err), zap.Any("interaction", i))
+				return
+			}
+			// todo: dispatch command and execute here
+			// todo: wait for completion
+			logger.Debug("waiting for a completion...", zap.Any("interaction", i))
+			time.Sleep(time.Second * 10)
+			logger.Debug("completed", zap.Any("interaction", i))
+			// todo: update result placeholder
+			msg := "completed!"
+			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &msg,
+			})
+			if err != nil {
+				logger.Error("failed to send a result response", zap.Error(err), zap.Any("interaction", i))
+				return
+			}
+		})()
 	})
 	err = session.Open()
 	if err != nil {
@@ -65,11 +90,16 @@ func (bot *DiscordBot) LaunchSession() error {
 	}
 	logger.Sugar().Info("bot launched")
 	bot.session = session
-	commands := []*discordgo.ApplicationCommand{
-		{
-			Name:        bot.config.SlashCommandPrefix,
-			Description: "run some specific commands",
-		},
+
+	// todo: warn duplicate commands
+	// prepare commands as root commands
+	var commands []*discordgo.ApplicationCommand
+	for _, command := range bot.config.Commands {
+		cmd := discordgo.ApplicationCommand{
+			Name:        command.Name,
+			Description: command.Description,
+		}
+		commands = append(commands, &cmd)
 	}
 	for _, val := range commands {
 		logger.Sugar().Debug("creating a command", zap.String("command_name", val.Name))
