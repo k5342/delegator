@@ -33,7 +33,7 @@ func (bot *DiscordBot) LaunchSession() error {
 			go (func() {
 				// todo: enqueue request here
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Content: "please wait...",
 					},
