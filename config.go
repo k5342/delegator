@@ -7,14 +7,12 @@ import (
 )
 
 type Config struct {
-	SlashCommandPrefix string    `yaml:"slash_command_prefix"`
-	DiscordBotToken    string    `yaml:"discord_bot_token"`
-	Commands           []Command `yaml:"commands"`
+	DiscordBotToken string    `yaml:"discord_bot_token"`
+	Commands        []Command `yaml:"commands"`
 }
 
 type Command struct {
 	BaseCommand `yaml:"base_command,inline"`
-	Subcommands []BaseCommand `yaml:"subcommands,omitempty"`
 }
 
 type TimeoutConfig struct {
@@ -31,9 +29,6 @@ type BaseCommand struct {
 
 func generateDefaultConfig() string {
 	return `
-# prefix is a root command name to call the bot
-slash_command_prefix: delegator
-
 # issue your discord bot token from Discord Developer Portal
 discord_bot_token: FILL_IT_HERE
 
@@ -42,10 +37,6 @@ commands:
 - name: date
   exec: /usr/bin/date # a full path to the command
   description: Returns a result of date command
-  subcommands:
-    - name: unixtime
-      description: Returns a result of date command in Unixtime
-      exec: /usr/bin/date +%s # arguments are allowed and it is separated by the space.
 - name: timeout
   exec: /usr/bin/sleep 10
   description: an example for execution time timeout
