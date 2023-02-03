@@ -22,13 +22,13 @@ func NewDiscordBot(config *Config) *DiscordBot {
 	return &bot
 }
 
-func (bot *DiscordBot) getCommandExec(commandName string) (bool, string) {
+func (bot *DiscordBot) lookupCommandByName(commandName string) (bool, *Command) {
 	for _, cmd := range bot.config.Commands {
 		if commandName == cmd.Name {
-			return true, cmd.Exec
+			return true, &cmd
 		}
 	}
-	return false, ""
+	return false, nil
 }
 
 func (bot *DiscordBot) LaunchSession() error {
@@ -40,13 +40,13 @@ func (bot *DiscordBot) LaunchSession() error {
 		// check whether the bot has a corresponding command handler of a requested command
 		commandName := i.ApplicationCommandData().Name
 		logger.Debug("interaction created", zap.Any("interaction", i))
-		found, cmdExec := bot.getCommandExec(commandName)
-		logger.Debug("getCommandExec", zap.Bool("found", found), zap.String("cmdExec", cmdExec))
+		found, cmd := bot.lookupCommandByName(commandName)
+		logger.Debug("getCommandExec", zap.Bool("found", found), zap.String("cmdExec", cmd.Exec))
 		if !found {
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("hmm, command `/%s` is not found or outdated. please reload the bot or cleanup unnecessary slash commands.", cmdExec),
+					Content: fmt.Sprintf("hmm, command `/%s` is not found or outdated. please reload the bot or cleanup unnecessary slash commands.", cmd.Exec),
 				},
 			})
 			if err != nil {
@@ -61,7 +61,7 @@ func (bot *DiscordBot) LaunchSession() error {
 			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Run: `%s`", cmdExec),
+					Content: fmt.Sprintf("Run: `%s`", cmd.Exec),
 				},
 			})
 			if err != nil {
