@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -68,13 +71,27 @@ func (bot *DiscordBot) LaunchSession() error {
 				logger.Error("failed to send a deferred response", zap.Error(err), zap.Any("interaction", i))
 				return
 			}
-			// todo: dispatch command and execute here
-			// todo: wait for completion
-			logger.Debug("waiting for a completion...", zap.Any("interaction", i))
-			time.Sleep(time.Second * 10)
-			logger.Debug("completed", zap.Any("interaction", i))
-			// todo: update result placeholder
-			msg := "completed!"
+			// todo: separate following command execution code as a dispatcher
+			// todo: a handler for timeout
+			// todo: support to make signal types configurable
+			logger.Debug("waiting for a completion...", zap.Any("interaction", i), zap.Any("timeout", cmd.Timeout))
+			var ctx context.Context
+			var cancel context.CancelFunc
+			if cmd.Timeout.Seconds > 0 {
+				ctx, cancel = context.WithTimeout(context.Background(), time.Duration(cmd.Timeout.Seconds)*time.Second)
+			} else {
+				ctx, cancel = context.WithCancel(context.Background())
+			}
+			defer cancel()
+			args := strings.Split(cmd.Exec, " ")
+			output, err := exec.CommandContext(ctx, args[0], args[1:]...).CombinedOutput()
+			var msg string
+			if err == nil {
+				msg = fmt.Sprintf("```\n%s\n```", string(output))
+			} else {
+				msg = fmt.Sprintf("Error: %s", err)
+			}
+			logger.Debug("completed", zap.Any("interaction", i), zap.Error(err))
 			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &msg,
 			})
