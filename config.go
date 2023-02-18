@@ -41,8 +41,8 @@ commands:
   exec: /usr/bin/sleep 10
   description: an example for execution time timeout
   timeout:
-    Signal: SIGTERM
-    Seconds: 1 # default is infinity (= 0). this limits to 1s`
+    signal: SIGTERM
+    seconds: 1 # default is infinity (= 0). this limits to 1s`
 }
 func getConfigPath() string {
 	return "./config.yaml"
