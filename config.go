@@ -16,8 +16,7 @@ type Command struct {
 }
 
 type TimeoutConfig struct {
-	Signal  string `yaml:"signal,omitempty"`
-	Seconds int    `yaml:"seconds"`
+	Seconds int `yaml:"seconds"`
 }
 
 type BaseCommand struct {
@@ -41,7 +40,6 @@ commands:
   exec: /usr/bin/sleep 10
   description: an example for execution time timeout
   timeout:
-    signal: SIGTERM
     seconds: 1 # default is infinity (= 0). this limits to 1s`
 }
 func getConfigPath() string {
