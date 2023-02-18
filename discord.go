@@ -89,7 +89,11 @@ func (bot *DiscordBot) LaunchSession() error {
 			if err == nil {
 				msg = fmt.Sprintf("```\n%s\n```", string(output))
 			} else {
-				msg = fmt.Sprintf("Error: %s", err)
+				if ctx.Err() == nil {
+					msg = fmt.Sprintf("Error: %s", err)
+				} else {
+					msg = fmt.Sprintf("Error: %s", ctx.Err())
+				}
 			}
 			logger.Debug("completed", zap.Any("interaction", i), zap.Error(err))
 			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
