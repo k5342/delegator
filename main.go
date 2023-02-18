@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -14,6 +15,17 @@ import (
 var (
 	logger *zap.Logger
 )
+
+type SessionStore struct {
+	sync.Mutex
+	store map[string]string
+}
+
+func NewSessionStore() *SessionStore {
+	return &SessionStore{
+		store: make(map[string]string),
+	}
+}
 
 func main() {
 	logger, _ = zap.NewProduction()
@@ -34,7 +46,7 @@ func main() {
 			if err != nil {
 				logger.Fatal("failed to load the config file", zap.Error(err))
 			}
-			bot := NewDiscordBot(config.DiscordBotToken)
+			bot := NewDiscordBot(config)
 			err = bot.LaunchSession()
 			if err != nil {
 				logger.Fatal("failed to launch a bot session", zap.Error(err))
