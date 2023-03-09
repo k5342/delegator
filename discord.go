@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os/exec"
 	"strings"
 	"time"
@@ -133,9 +133,9 @@ func (bot *DiscordBot) LaunchSession() error {
 			}
 			// wait for completion
 			logger.Debug("waiting for a completion...", zap.Any("interaction", i), zap.Any("timeout", cmd.Timeout))
-			stdout, _ := ioutil.ReadAll(stdoutPipe)
-			stderr, _ := ioutil.ReadAll(stderrPipe)
-			cmdExecutor.Wait()
+			stdout, _ := io.ReadAll(stdoutPipe)
+			stderr, _ := io.ReadAll(stderrPipe)
+			_ = cmdExecutor.Wait()
 			executionTimeElapsed := time.Since(executedAt)
 			footer := &discordgo.MessageEmbedFooter{
 				Text: fmt.Sprintf("queue = %0.02fs, pid = %d, execution = %0.02fs, exit code = %d",
