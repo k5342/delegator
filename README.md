@@ -19,3 +19,28 @@ A simple discord bot to _delegate_ everything using discord slash commands based
 
 ## Configuration
 Delegator reads a configuration file formatted in YAML.
+
+## Example
+
+### Configuration
+```yaml
+
+# issue your discord bot token from Discord Developer Portal
+discord_bot_token: ...
+
+# you can list commands here
+commands:
+- name: date
+  exec: /usr/bin/date # a full path to the command
+  description: Returns a result of date command
+- name: timeout
+  exec: /usr/bin/sleep 10
+  description: an example for execution time timeout
+  timeout:
+    seconds: 5 # default is infinity (= 0). this limits to 5s
+
+```
+
+### Screenshots
+![success](https://user-images.githubusercontent.com/1993005/224086658-8f4c8d12-a2fc-4652-bf9f-060c8845134d.gif)
+![timeout](https://user-images.githubusercontent.com/1993005/224086664-f03fede7-86b0-4f7d-ab70-9611f7c5942b.gif)
